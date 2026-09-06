@@ -1,0 +1,34 @@
+.hero-orbit {
+  animation: none;
+}
+
+.hero-orbit .orbital-text {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: visible;
+  animation: spin 20s linear infinite;
+}
+
+.orbital-text path {
+  fill: none;
+}
+
+.orbital-text text {
+  fill: var(--ink);
+  font: 500 9px "DM Mono", monospace;
+  letter-spacing: 1.2px;
+  text-anchor: middle;
+}
+
+.orbital-text .gen-ai {
+  letter-spacing: .7px;
+  word-spacing: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-orbit .orbital-text {
+    animation: none;
+  }
+}
