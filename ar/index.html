@@ -4,22 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>AR CV — Ana Caren Hernández Ruiz</title>
-<meta name="description" content="Augmented-reality CV of Ana Caren Hernández Ruiz, AI & Machine Learning Engineer. Scan, point your phone around you and walk through the CV floating in your space.">
-<meta name="theme-color" content="#171714">
+<meta name="description" content="Augmented-reality CV of Ana Caren Hernández Ruiz, Computer Vision & Deep Learning R&D Engineer. Scan, point your phone around you and walk through the CV floating in your space.">
+<meta name="theme-color" content="#131116">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Manrope:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
 <style>
   :root {
-    --paper: #f2eee6; --ink: #171714; --muted: #6d6a63; --line: rgba(23,23,20,.18);
-    --wine: #7b1e2b; --sand: #d8c8ae;
-    --glass: rgba(23,23,20,.62); --glass-line: rgba(242,238,230,.22);
+    --paper: #131116; --ink: #e9e6e3; --muted: #a39b96; --line: rgba(233,230,227,.14);
+    --wine: #a9a1cb; --violet: #695f94; --sand: #a39b96; --raised: #1a171e;
+    --glass: rgba(19,17,22,.66); --glass-line: rgba(233,230,227,.2);
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; overflow: hidden; }
   body {
-    background: radial-gradient(120% 90% at 50% 20%, #2a2925 0%, #171714 60%, #0f0f0d 100%);
-    color: var(--paper); font-family: Manrope, Arial, sans-serif;
+    background: radial-gradient(120% 90% at 50% 20%, #262229 0%, #131116 60%, #0d0c0f 100%);
+    color: var(--ink); font-family: Manrope, Arial, sans-serif;
     -webkit-font-smoothing: antialiased; touch-action: none; user-select: none; -webkit-user-select: none;
   }
   #cam { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
@@ -42,16 +42,16 @@
   .start-sub { font-size: 17px; line-height: 1.5; color: var(--muted); margin: 0 0 28px; max-width: 34em; }
   .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
   .btn-primary {
-    border: 0; border-radius: 999px; background: var(--ink); color: var(--paper);
+    border: 0; border-radius: 999px; background: var(--violet); color: #fff;
     padding: 16px 28px; font-weight: 600; font-size: 16px; display: inline-flex; gap: 10px; align-items: center;
   }
-  .btn-primary:hover { background: var(--wine); }
+  .btn-primary:hover { background: #7a70a8; }
   .btn-primary:disabled { opacity: .5; cursor: progress; }
   .btn-ghost { border: 1px solid var(--line); border-radius: 999px; background: transparent; padding: 15px 22px; font-size: 15px; color: var(--ink); }
   .note { margin: 20px 0 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
   .note a { color: var(--ink); }
-  .qr-card { border: 1px solid var(--line); border-radius: 20px; padding: 24px; text-align: center; background: #fbf9f4; justify-self: center; }
-  .qr-card .qr { width: 180px; height: 180px; margin: 0 auto 14px; }
+  .qr-card { border: 1px solid var(--line); border-radius: 20px; padding: 24px; text-align: center; background: var(--raised); justify-self: center; }
+  .qr-card .qr { width: 180px; height: 180px; margin: 0 auto 14px; padding: 10px; background: #f2eee6; border-radius: 10px; }
   .qr-card .qr img, .qr-card .qr canvas { width: 100% !important; height: 100% !important; image-rendering: pixelated; }
   .qr-card p { margin: 0; font-size: 12px; color: var(--muted); }
   .is-touch .qr-card { display: none; }
@@ -62,7 +62,7 @@
   #hud > * { pointer-events: auto; }
   .pill {
     background: var(--glass); border: 1px solid var(--glass-line); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    border-radius: 999px; color: var(--paper);
+    border-radius: 999px; color: var(--ink);
   }
   #where {
     position: absolute; top: calc(env(safe-area-inset-top) + 16px); left: 50%; transform: translateX(-50%);
@@ -89,7 +89,7 @@
   #toast.show { opacity: 1; }
   #sheet {
     position: absolute; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 92px);
-    max-width: 420px; margin: 0 auto; background: var(--paper); color: var(--ink);
+    max-width: 420px; margin: 0 auto; background: var(--raised); color: var(--ink); border: 1px solid var(--line);
     border-radius: 22px; padding: 22px 22px 10px; box-shadow: 0 20px 60px rgba(0,0,0,.35);
     transform: translateY(12px); opacity: 0; pointer-events: none; transition: .25s;
   }
@@ -104,9 +104,9 @@
   #sheetClose { position: absolute; top: 12px; right: 12px; border: 0; background: transparent; font-size: 22px; width: 40px; height: 40px; color: var(--muted); }
   #miniQr {
     position: absolute; left: 16px; bottom: 20px; padding: 12px; border-radius: 16px; display: none; text-align: center;
-    background: var(--paper); color: var(--muted); font-size: 10px; width: 120px;
+    background: var(--raised); color: var(--muted); font-size: 10px; width: 120px; border: 1px solid var(--line);
   }
-  #miniQr .qr { width: 96px; height: 96px; margin: 0 auto 8px; }
+  #miniQr .qr { width: 96px; height: 96px; margin: 0 auto 8px; padding: 6px; background: #f2eee6; border-radius: 6px; }
   #miniQr .qr img, #miniQr .qr canvas { width: 100% !important; height: 100% !important; }
   body.mode-3d:not(.is-touch).has-qr #miniQr { display: block; }
   @media (max-width: 720px) { #miniQr { display: none !important; } }
@@ -120,7 +120,7 @@
 <section id="start" aria-labelledby="startTitle">
   <div class="start-inner">
     <div>
-      <p class="kicker mono">AR CV · AI &amp; Machine Learning Engineer</p>
+      <p class="kicker mono">AR CV · Computer Vision &amp; Deep Learning R&amp;D Engineer</p>
       <h1 class="start-title" id="startTitle">Ana Caren<br><em>Hernández Ruiz</em></h1>
       <p class="start-sub">My CV, floating in the room around you. Start the view, then turn around (or use the arrows) to walk through each section.</p>
       <div class="actions">
@@ -137,7 +137,7 @@
 </section>
 
 <div id="hud">
-  <div id="where" class="pill mono"><b id="whereNum">01 / 09</b> · <span id="whereLabel">Hello</span></div>
+  <div id="where" class="pill mono"><b id="whereNum">Intro</b> · <span id="whereLabel">Hello</span></div>
   <button id="exit" class="pill" aria-label="Exit">×</button>
   <div id="toast" class="pill"></div>
   <div id="sheet" role="dialog" aria-modal="false" aria-labelledby="sheetTitle">
@@ -169,11 +169,11 @@ const SITE = 'https://anaacaren.github.io/';
 const PANELS = [
   { label: 'Hello', kicker: 'AR CV · Zaragoza, Spain', title: 'Ana Caren Hernández Ruiz',
     blocks: [
-      { t: 'meta', text: 'AI & Machine Learning Engineer · R&D Project Lead' },
+      { t: 'meta', text: 'Computer Vision & Deep Learning R&D Engineer' },
       { t: 'gap', h: 18 },
       { t: 'quote', text: 'Engineering intelligence from research to reality.' },
       { t: 'p', text: 'I build intelligent systems that move from experimental ideas to useful, deployable tools.' },
-      { t: 'tags', list: ['Computer vision', 'Generative AI', 'VLMs & LLMs', 'Multimodal AI', 'Deep learning', 'EU AI Act'] },
+      { t: 'tags', list: ['Computer vision', 'Deep learning', 'Object detection', 'Pose estimation', 'VLMs & LLMs', 'Multimodal AI', 'EU AI Act'] },
       { t: 'gap', h: 40 },
       { t: 'meta', text: 'Turn to your right, or tap ›, to walk through the CV →' },
     ],
@@ -181,47 +181,55 @@ const PANELS = [
 
   { label: 'Profile', kicker: '01 · Profile', title: 'Deep technical work, practical delivery.',
     blocks: [
-      { t: 'stats', list: [['6+', 'years in AI research & R&D'], ['4', 'peer-reviewed publications'], ['3', 'selected public AI projects'], ['MX · ES', 'Mexican roots, Spanish home']] },
-      { t: 'p', text: 'I lead R&D initiatives, develop production-minded software and turn complex multimodal data into useful systems.' },
+      { t: 'stats', list: [['5+', 'years in CV & deep learning R&D'], ['4', 'peer-reviewed publications'], ['AI · R&D', 'selected projects'], ['MX · ES', 'Mexican roots · Spanish citizen']] },
+      { t: 'p', text: 'I design, train and optimize neural networks for real-world vision across EU-funded, public-sector and industry projects, and turn complex multimodal data into useful systems.' },
       { t: 'p', text: 'My work covers the full AI lifecycle: sensors and data, model development and training, software integration, containerised deployment, and AI governance and open-source compliance.' },
     ] },
 
   { label: 'Experience', kicker: '02 · Experience', title: 'People, data & machines.',
     blocks: [
-      { t: 'meta', text: '2022 — Jul 2026 · ITA · Zaragoza' },
+      { t: 'meta', text: 'Nov 2022 — Jul 2026 · ITA · Zaragoza' },
       { t: 'h', text: 'AI R&D Engineer & Technical Project Lead' },
-      { t: 'p', text: 'Technical lead and AI developer on applied R&D projects with public and private partners: computer vision, deep learning, generative AI and multimodal learning on image, video, 3D, geospatial and sensor data. Python AI apps deployed with Docker and AWS; EU AI Act compliance and open-source licensing.' },
+      { t: 'p', text: 'Technical lead and AI developer on applied R&D projects with public and private partners, including EU-funded ones: classification, detection, segmentation, 2D/3D pose estimation and remote sensing, plus generative AI, VLMs and multimodal learning. Neural networks in PyTorch, from custom architectures to Ultralytics, OpenMMLab and detrex, with multi-GPU training and MLflow. Python AI apps deployed with Docker and AWS; EU AI Act compliance and open-source licensing.' },
       { t: 'rule' },
-      { t: 'meta', text: '2021 — 2022 · Aceros Coatepec · Veracruz' },
+      { t: 'meta', text: 'Dec 2021 — Oct 2022 · Aceros Coatepec · Veracruz, Mexico' },
       { t: 'h', text: 'Steel Warehouse Manager' },
       { t: 'p', text: 'Operations, logistics, inventory and B2B sales, run with an engineering mindset.' },
       { t: 'rule' },
-      { t: 'meta', text: '2020 — 2021 · University of Zaragoza' },
-      { t: 'h', text: 'Research Associate' },
-      { t: 'p', text: 'Semantic analysis of athlete behaviour: machine learning, human activity recognition and signal processing.' },
+      { t: 'meta', text: 'Feb 2020 — Sep 2021 · University of Zaragoza' },
+      { t: 'h', text: 'Research Associate (Level N4)' },
+      { t: 'p', text: 'Computer vision for athlete behaviour: 2D/3D pose estimation from tennis video (VA-CNN, VideoPose3D) and an end-to-end tennis-shot classification pipeline.' },
     ] },
 
   { label: 'Expertise', kicker: '03 · Technical expertise', title: 'What I work with.',
     blocks: [
-      { t: 'h', text: 'AI & Machine Learning' },
-      { t: 'p', text: 'Deep learning, CNNs, computer vision, generative AI, VLMs, LLMs, pattern recognition, multimodal learning.' },
+      { t: 'h', text: 'Computer Vision & AI' },
+      { t: 'p', text: 'Classification, detection, segmentation, 2D/3D pose, remote sensing, generative AI, VLMs, LLMs, multimodal learning.' },
+      { t: 'h', text: 'Deep Learning & Experimentation' },
+      { t: 'p', text: 'PyTorch, Ultralytics, OpenMMLab, detrex, Hugging Face, TensorFlow; multi-GPU training, MLflow, CVAT.' },
       { t: 'h', text: 'Programming & Data' },
-      { t: 'p', text: 'Python, PyTorch, TensorFlow, C++, MATLAB; image, video, 3D, geospatial and sensor data.' },
+      { t: 'p', text: 'Python, C++, SQL, MATLAB; OpenCV, NumPy, pandas, scikit-learn, Open3D, CUDA, Linux.' },
+      { t: 'h', text: 'Efficiency & Edge AI' },
+      { t: 'p', text: 'Quantization, low-spec inference, FPGA, SoC, NVIDIA Jetson Nano.' },
+      { t: 'h', text: 'Software Engineering & Deployment' },
+      { t: 'p', text: 'Git, GitHub Actions CI/CD, FastAPI, Docker, AWS.' },
       { t: 'h', text: 'AI Governance & Compliance' },
-      { t: 'p', text: 'EU AI Act, risk assessment and classification, technical documentation, open-source licensing.' },
-      { t: 'h', text: 'Cloud & Deployment' },
-      { t: 'p', text: 'Docker, AWS, DevOps workflows, containerised model pipelines.' },
+      { t: 'p', text: 'EU AI Act, risk classification, technical documentation, open-source licensing.' },
       { t: 'h', text: 'Engineering' },
-      { t: 'p', text: 'Signal processing, embedded systems, FPGA & SoC, hardware–software integration.' },
+      { t: 'p', text: 'Signal processing, embedded systems, hardware–software integration, multi-camera & sensor setups.' },
       { t: 'h', text: 'Leadership & Transfer' },
       { t: 'p', text: 'R&D leadership, technology transfer, cross-functional collaboration.' },
     ] },
 
-  { label: 'Projects', kicker: '04 · Selected projects at ITA', title: 'From models to working systems.',
+  { label: 'Projects', kicker: '04 · Selected AI & R&D projects', title: 'From models to working systems.',
     blocks: [
+      { t: 'meta', text: 'Industrial AI · Research to production' },
+      { t: 'h', text: 'AI for Industrial Quality Inspection' },
+      { t: 'p', text: 'Novel AI methodology for automated quality verification across multiple production lines, now running in production at a major automotive plant.' },
+      { t: 'rule' },
       { t: 'meta', text: 'Multimodal AI · Open-source R&D' },
       { t: 'h', text: 'BodyFlow' },
-      { t: 'p', text: 'Open-source multimodal human activity recognition: 2D/3D pose estimation from video fused with wearable sensors. Core developer, from sensor setup to the GitHub release.' },
+      { t: 'p', text: 'Open-source multimodal human activity recognition: 2D/3D pose estimation from video fused with wearable sensors. Core developer, from sensor setup to the GitHub release (Sensors, 2024); later led its adaptation for professional football players.' },
       { t: 'rule' },
       { t: 'meta', text: 'VLMs · Applied AI platform' },
       { t: 'h', text: 'Grafitae' },
@@ -229,7 +237,7 @@ const PANELS = [
       { t: 'rule' },
       { t: 'meta', text: 'Remote sensing · European R&D' },
       { t: 'h', text: 'ARD-TerraVision' },
-      { t: 'p', text: 'Custom deep-learning models for satellite and airborne imagery, deployed in a modular remote-sensing pipeline.' },
+      { t: 'p', text: 'Custom deep-learning models for satellite, airborne and multispectral imagery, deployed in a modular remote-sensing pipeline.' },
       { t: 'gap', h: 10 },
       { t: 'meta', text: 'Tap this panel for project links' },
     ],
@@ -241,17 +249,19 @@ const PANELS = [
 
   { label: 'Research', kicker: '05 · Research', title: 'Ideas made measurable.',
     blocks: [
-      { t: 'meta', text: '2024 · Sensors' },
+      { t: 'meta', text: '2024 · Sensors 24, 6729 · Q2' },
       { t: 'h', text: 'BodyFlow: An Open-Source Library for Multimodal Human Activity Recognition' },
-      { t: 'meta', text: '2024 · Diagnostics' },
-      { t: 'h', text: 'Gait-Based AI Models for Detecting Sarcopenia and Cognitive Decline' },
-      { t: 'meta', text: '2021 · IEEE Sensors' },
+      { t: 'meta', text: '2024 · Diagnostics 14, 2886 · Q1' },
+      { t: 'h', text: 'Gait-Based AI Models for Detecting Sarcopenia and Cognitive Decline Using Sensor Fusion' },
+      { t: 'meta', text: '2021 · IEEE Sensors · Sydney' },
       { t: 'h', text: 'Motor-Imagery EEGNet Based Processing on a Low-Spec SoC Hardware' },
-      { t: 'meta', text: '2021 · Electronics' },
+      { t: 'meta', text: '2021 · Electronics 10, 402 · Q3' },
       { t: 'h', text: 'Steel Bar Counting from Images with Machine Learning' },
       { t: 'rule' },
       { t: 'meta', text: 'M.Sc. thesis' },
-      { t: 'p', text: 'Scale-adaptive ML for counting steel products: 98.81% accuracy on round bars, 98.53% on square bars.' },
+      { t: 'p', text: 'New scale-adaptive neural network, designed from scratch, for counting densely packed steel bars: 98.81% accuracy on round bars, 98.53% on square.' },
+      { t: 'meta', text: '2021 · Independent research' },
+      { t: 'p', text: 'Quantized CNNs for brain–computer interfaces: EEGNet on low-spec SoC hardware and QCNNs on FPGA, trading accuracy against resources and latency.' },
       { t: 'meta', text: 'Tap this panel for papers & ORCID' },
     ],
     links: [
@@ -265,7 +275,7 @@ const PANELS = [
 
   { label: 'Education', kicker: '06 · Education & recognition', title: 'Where I trained.',
     blocks: [
-      { t: 'meta', text: '2024 — 2025 · ITA & Mondragon Team Academy' },
+      { t: 'meta', text: 'Sep 2024 — May 2025 · ITA & Mondragon Team Academy' },
       { t: 'h', text: 'T-Program' },
       { t: 'p', text: 'Strategic leadership, emerging technologies & intrapreneurship.' },
       { t: 'meta', text: '2017 — 2019 · INAOE · Puebla, Mexico' },
@@ -276,7 +286,7 @@ const PANELS = [
       { t: 'p', text: 'Research & innovation track · GPA 8.6/10' },
       { t: 'rule' },
       { t: 'meta', text: 'Recognition' },
-      { t: 'p', text: '2021 Xilinx Open Hardware finalist · 2020 TensorFlow Dev Summit travel grant · 2016 Outstanding IEEE student member' },
+      { t: 'p', text: '2021 Xilinx Open Hardware finalist · 2020 TensorFlow Dev Summit travel grant (online, COVID-19) · 2016 Outstanding IEEE student member' },
       { t: 'meta', text: 'Languages' },
       { t: 'p', text: 'Spanish (native) · English (C1)' },
     ] },
@@ -321,10 +331,14 @@ const PANELS = [
 /* ===================================================================== */
 const N = PANELS.length;
 const TEX_W = 1080, TEX_H = 1440;
-const PANEL_W = 0.84, PANEL_H = PANEL_W * TEX_H / TEX_W;   // metres
+// Size vs. fit: at 1.0 m wide and 1.9 m away a panel fills ~92% of a portrait phone's width.
+const PANEL_W = 1.0, PANEL_H = PANEL_W * TEX_H / TEX_W;    // metres
 const RADIUS = 1.9;                                        // distance from the viewer
-const STEP = THREE.MathUtils.degToRad(31);                 // angle between panels
-const C = { paper: '#f2eee6', ink: '#171714', body: '#34322d', muted: '#6d6a63', line: 'rgba(23,23,20,.18)', wine: '#7b1e2b' };
+const STEP = THREE.MathUtils.degToRad(35);                 // angle between panels (keeps a gap at this width)
+// The Hello panel is an intro; the rest are numbered 01–08 to match their kickers and the website sections.
+const pad2 = (n) => String(n).padStart(2, '0');
+const panelNum = (i) => i === 0 ? 'Intro' : `${pad2(i)} / ${pad2(N - 1)}`;
+const C = { panel: 'rgba(22,20,26,0.93)', ink: '#e9e6e3', body: '#cfc9c5', muted: '#a39b96', line: 'rgba(233,230,227,.16)', tag: 'rgba(233,230,227,.32)', wine: '#a9a1cb', violet: '#695f94' };
 
 const $ = (id) => document.getElementById(id);
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
@@ -379,15 +393,15 @@ function layout(g, p, idx, s, draw) {
     g.clearRect(0, 0, TEX_W, TEX_H);
     g.save();
     g.beginPath(); g.roundRect(4, 4, TEX_W - 8, TEX_H - 8, 40); g.clip();
-    g.fillStyle = 'rgba(242,238,230,0.94)'; g.fillRect(0, 0, TEX_W, TEX_H);
-    g.fillStyle = C.wine; g.fillRect(0, 0, TEX_W, 12);
+    g.fillStyle = C.panel; g.fillRect(0, 0, TEX_W, TEX_H);
+    g.fillStyle = C.violet; g.fillRect(0, 0, TEX_W, 12);
     g.restore();
     g.strokeStyle = C.line; g.lineWidth = 2;
     g.beginPath(); g.roundRect(4, 4, TEX_W - 8, TEX_H - 8, 40); g.stroke();
     // footer
     g.textBaseline = 'alphabetic';
     g.font = FONT.meta(1); setSpacing(g, 3); g.fillStyle = C.muted;
-    g.fillText(`${String(idx + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}`, PAD, TEX_H - 58);
+    g.fillText(panelNum(idx).toUpperCase(), PAD, TEX_H - 58);
     const site = 'ANAACAREN.GITHUB.IO';
     g.fillText(site, TEX_W - PAD - g.measureText(site).width, TEX_H - 58);
     g.fillStyle = C.line; g.fillRect(PAD, TEX_H - 104, maxW, 2);
@@ -422,7 +436,7 @@ function layout(g, p, idx, s, draw) {
           const w = g.measureText(tag.toUpperCase()).width + padX * 2;
           if (x + w > PAD + maxW) { x = PAD; y += hgt + gap; }
           if (draw) {
-            g.strokeStyle = 'rgba(23,23,20,.35)'; g.lineWidth = 2;
+            g.strokeStyle = C.tag; g.lineWidth = 2;
             g.beginPath(); g.roundRect(x, y, w, hgt, hgt / 2); g.stroke();
             g.fillStyle = C.ink; g.fillText(tag.toUpperCase(), x + padX, y + (hgt - 21 * s) / 2 + 1);
           }
@@ -507,7 +521,7 @@ function nearestToView() {
 
 /* ---------- HUD ---------- */
 function updateHud() {
-  $('whereNum').textContent = `${String(current + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}`;
+  $('whereNum').textContent = panelNum(current);
   $('whereLabel').textContent = PANELS[current].label;
   $('linksBtn').classList.toggle('off', !PANELS[current].links);
 }
@@ -697,7 +711,7 @@ async function init() {
 
   // QR code pointing at this page (desktop only)
   if (location.protocol.startsWith('http') && window.QRCode) {
-    const opts = { text: location.href.split('#')[0], colorDark: '#171714', colorLight: '#fbf9f4', correctLevel: QRCode.CorrectLevel.M };
+    const opts = { text: location.href.split('#')[0], colorDark: '#171714', colorLight: '#f2eee6', correctLevel: QRCode.CorrectLevel.M };
     new QRCode($('qrBig'), { ...opts, width: 360, height: 360 });
     new QRCode($('qrSmall'), { ...opts, width: 200, height: 200, colorLight: '#f2eee6' });
     $('qrCard').hidden = false; document.body.classList.add('has-qr');
