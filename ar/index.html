@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AR CV — Ana Caren Hernández Ruiz</title>
+<meta name="description" content="Augmented-reality CV of Ana Caren Hernández Ruiz, AI & Machine Learning Engineer. Scan, point your phone around you and walk through the CV floating in your space.">
+<meta name="theme-color" content="#171714">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Manrope:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f2eee6; --ink: #171714; --muted: #6d6a63; --line: rgba(23,23,20,.18);
+    --wine: #7b1e2b; --sand: #d8c8ae;
+    --glass: rgba(23,23,20,.62); --glass-line: rgba(242,238,230,.22);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body {
+    background: radial-gradient(120% 90% at 50% 20%, #2a2925 0%, #171714 60%, #0f0f0d 100%);
+    color: var(--paper); font-family: Manrope, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased; touch-action: none; user-select: none; -webkit-user-select: none;
+  }
+  #cam { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
+  body.mode-camera #cam { display: block; }
+  #gl { position: fixed; inset: 0; display: block; touch-action: none; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .mono { font-family: "DM Mono", ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; }
+
+  /* ---------- start screen ---------- */
+  #start {
+    position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px; background: var(--paper); color: var(--ink); overflow-y: auto;
+  }
+  body:not(.mode-start) #start { display: none; }
+  .start-inner { width: 100%; max-width: 920px; display: grid; gap: 40px; grid-template-columns: 1fr; align-items: center; }
+  @media (min-width: 820px) { .start-inner { grid-template-columns: 1.4fr 1fr; } }
+  .kicker { font-size: 12px; color: var(--wine); margin: 0 0 18px; }
+  .start-title { font-family: Newsreader, serif; font-weight: 400; font-size: clamp(40px, 8vw, 76px); line-height: 1; margin: 0 0 14px; letter-spacing: -.02em; }
+  .start-title em { color: var(--wine); }
+  .start-sub { font-size: 17px; line-height: 1.5; color: var(--muted); margin: 0 0 28px; max-width: 34em; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .btn-primary {
+    border: 0; border-radius: 999px; background: var(--ink); color: var(--paper);
+    padding: 16px 28px; font-weight: 600; font-size: 16px; display: inline-flex; gap: 10px; align-items: center;
+  }
+  .btn-primary:hover { background: var(--wine); }
+  .btn-primary:disabled { opacity: .5; cursor: progress; }
+  .btn-ghost { border: 1px solid var(--line); border-radius: 999px; background: transparent; padding: 15px 22px; font-size: 15px; color: var(--ink); }
+  .note { margin: 20px 0 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .note a { color: var(--ink); }
+  .qr-card { border: 1px solid var(--line); border-radius: 20px; padding: 24px; text-align: center; background: #fbf9f4; justify-self: center; }
+  .qr-card .qr { width: 180px; height: 180px; margin: 0 auto 14px; }
+  .qr-card .qr img, .qr-card .qr canvas { width: 100% !important; height: 100% !important; image-rendering: pixelated; }
+  .qr-card p { margin: 0; font-size: 12px; color: var(--muted); }
+  .is-touch .qr-card { display: none; }
+
+  /* ---------- HUD (also the WebXR dom-overlay root) ---------- */
+  #hud { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+  body.mode-start #hud { display: none; }
+  #hud > * { pointer-events: auto; }
+  .pill {
+    background: var(--glass); border: 1px solid var(--glass-line); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-radius: 999px; color: var(--paper);
+  }
+  #where {
+    position: absolute; top: calc(env(safe-area-inset-top) + 16px); left: 50%; transform: translateX(-50%);
+    padding: 10px 18px; font-size: 12px; white-space: nowrap;
+  }
+  #where b { color: var(--sand); font-weight: 500; }
+  #exit {
+    position: absolute; top: calc(env(safe-area-inset-top) + 12px); right: 16px;
+    width: 44px; height: 44px; display: grid; place-items: center; font-size: 22px; line-height: 1;
+  }
+  #nav {
+    position: absolute; bottom: calc(env(safe-area-inset-bottom) + 20px); left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px; padding: 6px;
+  }
+  #nav button { border: 0; background: transparent; border-radius: 999px; height: 48px; min-width: 52px; padding: 0 18px; font-size: 15px; }
+  #nav button:hover { background: rgba(242,238,230,.12); }
+  #nav .arrow { font-size: 26px; padding: 0 14px; }
+  #linksBtn.off { visibility: hidden; }
+  #toast {
+    position: absolute; bottom: calc(env(safe-area-inset-bottom) + 92px); left: 50%; transform: translateX(-50%);
+    padding: 10px 16px; font-size: 13px; max-width: calc(100% - 32px); text-align: center;
+    transition: opacity .4s; opacity: 0; pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  #sheet {
+    position: absolute; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 92px);
+    max-width: 420px; margin: 0 auto; background: var(--paper); color: var(--ink);
+    border-radius: 22px; padding: 22px 22px 10px; box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    transform: translateY(12px); opacity: 0; pointer-events: none; transition: .25s;
+  }
+  #sheet.open { transform: none; opacity: 1; pointer-events: auto; }
+  #sheet h3 { margin: 0 0 6px; font-family: Newsreader, serif; font-weight: 400; font-size: 26px; }
+  #sheet .kicker { margin-bottom: 8px; font-size: 11px; }
+  #sheet a {
+    display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-top: 1px solid var(--line);
+    color: var(--ink); text-decoration: none; font-weight: 600; font-size: 15px;
+  }
+  #sheet a span { color: var(--wine); }
+  #sheetClose { position: absolute; top: 12px; right: 12px; border: 0; background: transparent; font-size: 22px; width: 40px; height: 40px; color: var(--muted); }
+  #miniQr {
+    position: absolute; left: 16px; bottom: 20px; padding: 12px; border-radius: 16px; display: none; text-align: center;
+    background: var(--paper); color: var(--muted); font-size: 10px; width: 120px;
+  }
+  #miniQr .qr { width: 96px; height: 96px; margin: 0 auto 8px; }
+  #miniQr .qr img, #miniQr .qr canvas { width: 100% !important; height: 100% !important; }
+  body.mode-3d:not(.is-touch).has-qr #miniQr { display: block; }
+  @media (max-width: 720px) { #miniQr { display: none !important; } }
+  #loading { position: fixed; inset: 0; display: grid; place-items: center; color: var(--sand); font-size: 12px; z-index: 5; }
+</style>
+</head>
+<body class="mode-start">
+<video id="cam" playsinline muted autoplay></video>
+<canvas id="gl"></canvas>
+
+<section id="start" aria-labelledby="startTitle">
+  <div class="start-inner">
+    <div>
+      <p class="kicker mono">AR CV · AI &amp; Machine Learning Engineer</p>
+      <h1 class="start-title" id="startTitle">Ana Caren<br><em>Hernández Ruiz</em></h1>
+      <p class="start-sub">My CV, floating in the room around you. Start the view, then turn around (or use the arrows) to walk through each section.</p>
+      <div class="actions">
+        <button class="btn-primary" id="primary" disabled>Checking your device…</button>
+        <button class="btn-ghost" id="secondary" hidden>View without camera</button>
+      </div>
+      <p class="note">The camera feed stays on your device and is never recorded or uploaded. Prefer to read it flat? <a href="../">Open the full website</a>.</p>
+    </div>
+    <div class="qr-card" id="qrCard" hidden>
+      <div class="qr" id="qrBig"></div>
+      <p class="mono">Scan with your phone camera<br>to see it in AR</p>
+    </div>
+  </div>
+</section>
+
+<div id="hud">
+  <div id="where" class="pill mono"><b id="whereNum">01 / 09</b> · <span id="whereLabel">Hello</span></div>
+  <button id="exit" class="pill" aria-label="Exit">×</button>
+  <div id="toast" class="pill"></div>
+  <div id="sheet" role="dialog" aria-modal="false" aria-labelledby="sheetTitle">
+    <button id="sheetClose" aria-label="Close links">×</button>
+    <p class="kicker mono" id="sheetKicker"></p>
+    <h3 id="sheetTitle">Links</h3>
+    <div id="sheetLinks"></div>
+  </div>
+  <div id="nav" class="pill">
+    <button class="arrow" id="prev" aria-label="Previous section">‹</button>
+    <button id="linksBtn">Links</button>
+    <button class="arrow" id="next" aria-label="Next section">›</button>
+  </div>
+  <div id="miniQr"><div class="qr" id="qrSmall"></div><span class="mono">Scan for AR</span></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+/* =====================================================================
+   CV CONTENT — edit text here. Block types:
+   quote · p · h · meta · rule · gap · tags · stats
+   ===================================================================== */
+const SITE = 'https://anaacaren.github.io/';
+const PANELS = [
+  { label: 'Hello', kicker: 'AR CV · Zaragoza, Spain', title: 'Ana Caren Hernández Ruiz',
+    blocks: [
+      { t: 'meta', text: 'AI & Machine Learning Engineer · R&D Project Lead' },
+      { t: 'gap', h: 18 },
+      { t: 'quote', text: 'Engineering intelligence from research to reality.' },
+      { t: 'p', text: 'I build intelligent systems that move from experimental ideas to useful, deployable tools.' },
+      { t: 'tags', list: ['Computer vision', 'Generative AI', 'VLMs & LLMs', 'Multimodal AI', 'Deep learning', 'EU AI Act'] },
+      { t: 'gap', h: 40 },
+      { t: 'meta', text: 'Turn to your right, or tap ›, to walk through the CV →' },
+    ],
+    links: [['Full website', SITE], ['LinkedIn', 'https://www.linkedin.com/in/anaacaren/']] },
+
+  { label: 'Profile', kicker: '01 · Profile', title: 'Deep technical work, practical delivery.',
+    blocks: [
+      { t: 'stats', list: [['6+', 'years in AI research & R&D'], ['4', 'peer-reviewed publications'], ['3', 'selected public AI projects'], ['MX · ES', 'Mexican roots, Spanish home']] },
+      { t: 'p', text: 'I lead R&D initiatives, develop production-minded software and turn complex multimodal data into useful systems.' },
+      { t: 'p', text: 'My work covers the full AI lifecycle: sensors and data, model development and training, software integration, containerised deployment, and AI governance and open-source compliance.' },
+    ] },
+
+  { label: 'Experience', kicker: '02 · Experience', title: 'People, data & machines.',
+    blocks: [
+      { t: 'meta', text: '2022 — Jul 2026 · ITA · Zaragoza' },
+      { t: 'h', text: 'AI R&D Engineer & Technical Project Lead' },
+      { t: 'p', text: 'Technical lead and AI developer on applied R&D projects with public and private partners: computer vision, deep learning, generative AI and multimodal learning on image, video, 3D, geospatial and sensor data. Python AI apps deployed with Docker and AWS; EU AI Act compliance and open-source licensing.' },
+      { t: 'rule' },
+      { t: 'meta', text: '2021 — 2022 · Aceros Coatepec · Veracruz' },
+      { t: 'h', text: 'Steel Warehouse Manager' },
+      { t: 'p', text: 'Operations, logistics, inventory and B2B sales, run with an engineering mindset.' },
+      { t: 'rule' },
+      { t: 'meta', text: '2020 — 2021 · University of Zaragoza' },
+      { t: 'h', text: 'Research Associate' },
+      { t: 'p', text: 'Semantic analysis of athlete behaviour: machine learning, human activity recognition and signal processing.' },
+    ] },
+
+  { label: 'Expertise', kicker: '03 · Technical expertise', title: 'What I work with.',
+    blocks: [
+      { t: 'h', text: 'AI & Machine Learning' },
+      { t: 'p', text: 'Deep learning, CNNs, computer vision, generative AI, VLMs, LLMs, pattern recognition, multimodal learning.' },
+      { t: 'h', text: 'Programming & Data' },
+      { t: 'p', text: 'Python, PyTorch, TensorFlow, C++, MATLAB; image, video, 3D, geospatial and sensor data.' },
+      { t: 'h', text: 'AI Governance & Compliance' },
+      { t: 'p', text: 'EU AI Act, risk assessment and classification, technical documentation, open-source licensing.' },
+      { t: 'h', text: 'Cloud & Deployment' },
+      { t: 'p', text: 'Docker, AWS, DevOps workflows, containerised model pipelines.' },
+      { t: 'h', text: 'Engineering' },
+      { t: 'p', text: 'Signal processing, embedded systems, FPGA & SoC, hardware–software integration.' },
+      { t: 'h', text: 'Leadership & Transfer' },
+      { t: 'p', text: 'R&D leadership, technology transfer, cross-functional collaboration.' },
+    ] },
+
+  { label: 'Projects', kicker: '04 · Selected projects at ITA', title: 'From models to working systems.',
+    blocks: [
+      { t: 'meta', text: 'Multimodal AI · Open-source R&D' },
+      { t: 'h', text: 'BodyFlow' },
+      { t: 'p', text: 'Open-source multimodal human activity recognition: 2D/3D pose estimation from video fused with wearable sensors. Core developer, from sensor setup to the GitHub release.' },
+      { t: 'rule' },
+      { t: 'meta', text: 'VLMs · Applied AI platform' },
+      { t: 'h', text: 'Grafitae' },
+      { t: 'p', text: 'End-to-end Vision-Language Model platform supporting graffiti authorship analysis on geolocated real-world imagery.' },
+      { t: 'rule' },
+      { t: 'meta', text: 'Remote sensing · European R&D' },
+      { t: 'h', text: 'ARD-TerraVision' },
+      { t: 'p', text: 'Custom deep-learning models for satellite and airborne imagery, deployed in a modular remote-sensing pipeline.' },
+      { t: 'gap', h: 10 },
+      { t: 'meta', text: 'Tap this panel for project links' },
+    ],
+    links: [
+      ['BodyFlow on GitHub', 'https://github.com/ITA-TECNOLOGIA/BodyFlow'],
+      ['About Grafitae', 'https://www.heraldo.es/noticias/aragon/2026/03/03/como-identifica-ia-grafiteros-zaragoza-ita-innoidea-grafitae-1898826.html'],
+      ['ARD-TerraVision on GitHub', 'https://github.com/ITA-TECNOLOGIA/Ard-Terravision'],
+    ] },
+
+  { label: 'Research', kicker: '05 · Research', title: 'Ideas made measurable.',
+    blocks: [
+      { t: 'meta', text: '2024 · Sensors' },
+      { t: 'h', text: 'BodyFlow: An Open-Source Library for Multimodal Human Activity Recognition' },
+      { t: 'meta', text: '2024 · Diagnostics' },
+      { t: 'h', text: 'Gait-Based AI Models for Detecting Sarcopenia and Cognitive Decline' },
+      { t: 'meta', text: '2021 · IEEE Sensors' },
+      { t: 'h', text: 'Motor-Imagery EEGNet Based Processing on a Low-Spec SoC Hardware' },
+      { t: 'meta', text: '2021 · Electronics' },
+      { t: 'h', text: 'Steel Bar Counting from Images with Machine Learning' },
+      { t: 'rule' },
+      { t: 'meta', text: 'M.Sc. thesis' },
+      { t: 'p', text: 'Scale-adaptive ML for counting steel products: 98.81% accuracy on round bars, 98.53% on square bars.' },
+      { t: 'meta', text: 'Tap this panel for papers & ORCID' },
+    ],
+    links: [
+      ['BodyFlow · Sensors 2024', 'https://doi.org/10.3390/s24206729'],
+      ['Gait-based AI · Diagnostics 2024', 'https://doi.org/10.3390/diagnostics14242886'],
+      ['EEGNet on SoC · IEEE Sensors 2021', 'https://doi.org/10.1109/SENSORS47087.2021.9639747'],
+      ['Steel bar counting · Electronics 2021', 'https://doi.org/10.3390/electronics10040402'],
+      ['ORCID', 'https://orcid.org/0000-0001-6318-6162'],
+      ['Google Scholar', 'https://scholar.google.com/citations?user=0nYlJvkAAAAJ&hl=es'],
+    ] },
+
+  { label: 'Education', kicker: '06 · Education & recognition', title: 'Where I trained.',
+    blocks: [
+      { t: 'meta', text: '2024 — 2025 · ITA & Mondragon Team Academy' },
+      { t: 'h', text: 'T-Program' },
+      { t: 'p', text: 'Strategic leadership, emerging technologies & intrapreneurship.' },
+      { t: 'meta', text: '2017 — 2019 · INAOE · Puebla, Mexico' },
+      { t: 'h', text: 'M.Sc. in Electronics Sciences' },
+      { t: 'p', text: 'IC design & instrumentation · CONACYT-funded · GPA 9.0/10' },
+      { t: 'meta', text: '2011 — 2016 · Tecnológico de Monterrey' },
+      { t: 'h', text: 'B.Sc. in Mechatronics Engineering' },
+      { t: 'p', text: 'Research & innovation track · GPA 8.6/10' },
+      { t: 'rule' },
+      { t: 'meta', text: 'Recognition' },
+      { t: 'p', text: '2021 Xilinx Open Hardware finalist · 2020 TensorFlow Dev Summit travel grant · 2016 Outstanding IEEE student member' },
+      { t: 'meta', text: 'Languages' },
+      { t: 'p', text: 'Spanish (native) · English (C1)' },
+    ] },
+
+  { label: 'Outreach', kicker: '07 · Teaching & outreach', title: 'Technology should be shared, not siloed.',
+    blocks: [
+      { t: 'meta', text: '2021 · Tecnun, University of Navarra' },
+      { t: 'h', text: 'Lecture: Machine Learning for Sensor Applications' },
+      { t: 'meta', text: '2020 · University of Zaragoza' },
+      { t: 'h', text: 'Seminar: A Paradigm Shift, an Approach to ML' },
+      { t: 'meta', text: '2019 · CONACYT · Puebla' },
+      { t: 'h', text: 'Guest speaker: For More Women in Science and Technology' },
+      { t: 'meta', text: '2015 — 2018 · IEEE Puebla' },
+      { t: 'h', text: 'Student Branch Chair & Pre-University Coordinator' },
+      { t: 'p', text: '25+ robotics workshops with Arduino, Parallax and Snap Circuits for students at schools, fairs and universities.' },
+    ],
+    links: [['IEEE Positive', 'https://anaacaren.wixsite.com/ieeepositive']] },
+
+  { label: 'Contact', kicker: '08 · Contact', title: 'Let’s build something meaningful.',
+    blocks: [
+      { t: 'p', text: 'Have an ambitious problem? I’d love to hear about it.' },
+      { t: 'gap', h: 10 },
+      { t: 'quote', text: 'anaacaren@gmail.com' },
+      { t: 'rule' },
+      { t: 'meta', text: 'LinkedIn' }, { t: 'h', text: 'linkedin.com/in/anaacaren' },
+      { t: 'meta', text: 'GitHub' }, { t: 'h', text: 'github.com/anaacaren' },
+      { t: 'meta', text: 'Website' }, { t: 'h', text: 'anaacaren.github.io' },
+      { t: 'gap', h: 20 },
+      { t: 'meta', text: 'Tap this panel to open links' },
+    ],
+    links: [
+      ['Email', 'mailto:anaacaren@gmail.com'],
+      ['LinkedIn', 'https://www.linkedin.com/in/anaacaren/'],
+      ['GitHub', 'https://github.com/anaacaren'],
+      ['Google Scholar', 'https://scholar.google.com/citations?user=0nYlJvkAAAAJ&hl=es'],
+      ['ResearchGate', 'https://www.researchgate.net/profile/Ana-Hernandez-Ruiz-2'],
+      ['ORCID', 'https://orcid.org/0000-0001-6318-6162'],
+      ['Full website', SITE],
+    ] },
+];
+
+/* ===================================================================== */
+const N = PANELS.length;
+const TEX_W = 1080, TEX_H = 1440;
+const PANEL_W = 0.84, PANEL_H = PANEL_W * TEX_H / TEX_W;   // metres
+const RADIUS = 1.9;                                        // distance from the viewer
+const STEP = THREE.MathUtils.degToRad(31);                 // angle between panels
+const C = { paper: '#f2eee6', ink: '#171714', body: '#34322d', muted: '#6d6a63', line: 'rgba(23,23,20,.18)', wine: '#7b1e2b' };
+
+const $ = (id) => document.getElementById(id);
+const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+if (isTouch) document.body.classList.add('is-touch');
+
+/* ---------- three.js setup ---------- */
+const renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.setClearColor(0x000000, 0);
+renderer.xr.enabled = true;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.01, 50);
+camera.rotation.order = 'YXZ';
+const rig = new THREE.Group();     // the ring of CV panels
+scene.add(rig);
+
+const floor = new THREE.PolarGridHelper(5, 24, 10, 96, 0x8a857a, 0x5a5750);
+floor.position.y = -1.45;
+floor.material.transparent = true; floor.material.opacity = .22;
+scene.add(floor);
+
+/* ---------- panel textures (drawn on canvas) ---------- */
+const FONT = {
+  kicker: s => `500 ${24 * s}px "DM Mono", monospace`,
+  title:  s => `400 ${84 * s}px Newsreader, Georgia, serif`,
+  quote:  s => `italic 400 ${52 * s}px Newsreader, Georgia, serif`,
+  h:      s => `600 ${34 * s}px Manrope, Arial, sans-serif`,
+  p:      s => `400 ${29 * s}px Manrope, Arial, sans-serif`,
+  meta:   s => `400 ${21 * s}px "DM Mono", monospace`,
+  stat:   s => `400 ${88 * s}px Newsreader, Georgia, serif`,
+  label:  s => `500 ${24 * s}px Manrope, Arial, sans-serif`,
+};
+function wrap(g, text, maxW) {
+  const words = text.split(' '); const lines = []; let line = '';
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (g.measureText(test).width > maxW && line) { lines.push(line); line = w; } else line = test;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+function setSpacing(g, px) { if ('letterSpacing' in g) g.letterSpacing = px + 'px'; }
+
+function layout(g, p, idx, s, draw) {
+  const PAD = 84, maxW = TEX_W - PAD * 2;
+  let y = 92;
+  const text = (lines, lh, x = PAD) => { lines.forEach((l, k) => draw && g.fillText(l, x, y + k * lh)); y += lines.length * lh; };
+
+  if (draw) {
+    g.clearRect(0, 0, TEX_W, TEX_H);
+    g.save();
+    g.beginPath(); g.roundRect(4, 4, TEX_W - 8, TEX_H - 8, 40); g.clip();
+    g.fillStyle = 'rgba(242,238,230,0.94)'; g.fillRect(0, 0, TEX_W, TEX_H);
+    g.fillStyle = C.wine; g.fillRect(0, 0, TEX_W, 12);
+    g.restore();
+    g.strokeStyle = C.line; g.lineWidth = 2;
+    g.beginPath(); g.roundRect(4, 4, TEX_W - 8, TEX_H - 8, 40); g.stroke();
+    // footer
+    g.textBaseline = 'alphabetic';
+    g.font = FONT.meta(1); setSpacing(g, 3); g.fillStyle = C.muted;
+    g.fillText(`${String(idx + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}`, PAD, TEX_H - 58);
+    const site = 'ANAACAREN.GITHUB.IO';
+    g.fillText(site, TEX_W - PAD - g.measureText(site).width, TEX_H - 58);
+    g.fillStyle = C.line; g.fillRect(PAD, TEX_H - 104, maxW, 2);
+  }
+  g.textBaseline = 'top';
+
+  // kicker
+  g.font = FONT.kicker(s); setSpacing(g, 4 * s); g.fillStyle = C.wine;
+  text([p.kicker.toUpperCase()], 34 * s);
+  y += 18 * s;
+  // title
+  g.font = FONT.title(s); setSpacing(g, -1.5 * s); g.fillStyle = C.ink;
+  text(wrap(g, p.title, maxW), 84 * s * 1.04);
+  y += 34 * s;
+
+  for (const b of p.blocks) {
+    switch (b.t) {
+      case 'quote': g.font = FONT.quote(s); setSpacing(g, -.5 * s); g.fillStyle = C.wine;
+        text(wrap(g, b.text, maxW), 52 * s * 1.12); y += 26 * s; break;
+      case 'p': g.font = FONT.p(s); setSpacing(g, 0); g.fillStyle = C.body;
+        text(wrap(g, b.text, maxW), 29 * s * 1.45); y += 22 * s; break;
+      case 'h': g.font = FONT.h(s); setSpacing(g, -.3 * s); g.fillStyle = C.ink;
+        text(wrap(g, b.text, maxW), 34 * s * 1.24); y += 12 * s; break;
+      case 'meta': g.font = FONT.meta(s); setSpacing(g, 2.5 * s); g.fillStyle = C.muted;
+        text(wrap(g, b.text.toUpperCase(), maxW), 21 * s * 1.4); y += 10 * s; break;
+      case 'rule': y += 10 * s; if (draw) { g.fillStyle = C.line; g.fillRect(PAD, y, maxW, 2); } y += 30 * s; break;
+      case 'gap': y += b.h * s; break;
+      case 'tags': {
+        g.font = FONT.meta(s); setSpacing(g, 2 * s);
+        const hgt = 50 * s, padX = 20 * s, gap = 12 * s; let x = PAD;
+        for (const tag of b.list) {
+          const w = g.measureText(tag.toUpperCase()).width + padX * 2;
+          if (x + w > PAD + maxW) { x = PAD; y += hgt + gap; }
+          if (draw) {
+            g.strokeStyle = 'rgba(23,23,20,.35)'; g.lineWidth = 2;
+            g.beginPath(); g.roundRect(x, y, w, hgt, hgt / 2); g.stroke();
+            g.fillStyle = C.ink; g.fillText(tag.toUpperCase(), x + padX, y + (hgt - 21 * s) / 2 + 1);
+          }
+          x += w + gap;
+        }
+        y += hgt + 24 * s; break;
+      }
+      case 'stats': {
+        const colW = (maxW - 40 * s) / 2;
+        for (let r = 0; r < b.list.length; r += 2) {
+          let rowH = 0;
+          for (let c = 0; c < 2 && r + c < b.list.length; c++) {
+            const [num, lab] = b.list[r + c]; const x = PAD + c * (colW + 40 * s);
+            g.font = FONT.stat(s); setSpacing(g, -2 * s); g.fillStyle = C.wine;
+            if (draw) g.fillText(num, x, y);
+            g.font = FONT.label(s); setSpacing(g, 0); g.fillStyle = C.muted;
+            const ls = wrap(g, lab, colW);
+            if (draw) ls.forEach((l, k) => g.fillText(l, x, y + 96 * s + k * 32 * s));
+            rowH = Math.max(rowH, 96 * s + ls.length * 32 * s);
+          }
+          y += rowH + 30 * s;
+        }
+        y += 10 * s; break;
+      }
+    }
+  }
+  return y;
+}
+
+function makeTexture(p, idx) {
+  const c = document.createElement('canvas'); c.width = TEX_W; c.height = TEX_H;
+  const g = c.getContext('2d');
+  let s = 1.3;   // sparse panels get larger text; dense ones shrink to fit
+  while (s > 0.62 && layout(g, p, idx, s, false) > TEX_H - 130) s -= 0.03;   // shrink text to fit
+  layout(g, p, idx, s, true);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return tex;
+}
+
+const meshes = [];
+async function buildPanels() {
+  const fonts = ['500 24px "DM Mono"', '400 24px "DM Mono"', '400 84px Newsreader', 'italic 400 52px Newsreader',
+                 '600 34px Manrope', '500 24px Manrope', '400 29px Manrope'];
+  await Promise.race([Promise.all(fonts.map(f => document.fonts.load(f))), new Promise(r => setTimeout(r, 3500))]);
+  const geo = new THREE.PlaneGeometry(PANEL_W, PANEL_H);
+  PANELS.forEach((p, i) => {
+    const mat = new THREE.MeshBasicMaterial({ map: makeTexture(p, i), transparent: true, depthWrite: false });
+    const m = new THREE.Mesh(geo, mat);
+    const a = i * STEP;
+    m.position.set(RADIUS * Math.sin(a), 0, -RADIUS * Math.cos(a));
+    m.lookAt(0, 0, 0);
+    m.userData.index = i;
+    rig.add(m); meshes.push(m);
+  });
+  $('loading').remove();
+}
+
+/* ---------- focusing a panel in front of the viewer ---------- */
+let current = 0, targetYaw = 0;
+const targetPos = new THREE.Vector3();
+const vPos = new THREE.Vector3(), vDir = new THREE.Vector3();
+const wrapAngle = a => Math.atan2(Math.sin(a), Math.cos(a));
+function viewCam() { return renderer.xr.isPresenting ? renderer.xr.getCamera() : camera; }
+function viewerYaw() { viewCam().getWorldDirection(vDir); return Math.atan2(vDir.x, -vDir.z); }
+
+function focus(i, instant = false) {
+  current = (i + N) % N;
+  const cam = viewCam(); cam.getWorldPosition(vPos);
+  const yaw = current * STEP - viewerYaw();
+  targetYaw = rig.rotation.y + wrapAngle(yaw - rig.rotation.y);
+  targetPos.set(vPos.x, vPos.y - 0.06, vPos.z);
+  if (instant) { rig.rotation.y = targetYaw; rig.position.copy(targetPos); }
+  closeSheet(); updateHud();
+}
+function nearestToView() {
+  const a = viewerYaw(); let best = 0, bestD = Infinity;
+  for (let i = 0; i < N; i++) { const d = Math.abs(wrapAngle(i * STEP - rig.rotation.y - a)); if (d < bestD) { bestD = d; best = i; } }
+  return best;
+}
+
+/* ---------- HUD ---------- */
+function updateHud() {
+  $('whereNum').textContent = `${String(current + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}`;
+  $('whereLabel').textContent = PANELS[current].label;
+  $('linksBtn').classList.toggle('off', !PANELS[current].links);
+}
+let toastTimer;
+function toast(msg, ms = 3200) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+}
+function openSheet(i) {
+  const p = PANELS[i]; if (!p.links) return;
+  $('sheetKicker').textContent = p.kicker; $('sheetTitle').textContent = p.label + ' links';
+  const box = $('sheetLinks'); box.replaceChildren();
+  for (const [label, href] of p.links) {
+    const a = document.createElement('a'); a.href = href;
+    if (!href.startsWith('mailto:')) { a.target = '_blank'; a.rel = 'noopener'; }
+    a.append(label); const s = document.createElement('span'); s.textContent = '↗'; a.append(s);
+    box.append(a);
+  }
+  $('sheet').classList.add('open');
+}
+function closeSheet() { $('sheet').classList.remove('open'); }
+
+$('prev').onclick = () => focus(current - 1);
+$('next').onclick = () => focus(current + 1);
+$('linksBtn').onclick = () => $('sheet').classList.contains('open') ? closeSheet() : openSheet(current);
+$('sheetClose').onclick = closeSheet;
+$('exit').onclick = () => exitView();
+// taps on the HUD must not also count as taps in the AR scene
+$('hud').querySelectorAll('button, #sheet').forEach(el => el.addEventListener('beforexrselect', e => e.preventDefault()));
+addEventListener('keydown', e => {
+  if (document.body.classList.contains('mode-start')) return;
+  if (e.key === 'ArrowRight') focus(current + 1);
+  if (e.key === 'ArrowLeft') focus(current - 1);
+  if (e.key === 'Escape') $('sheet').classList.contains('open') ? closeSheet() : exitView();
+});
+
+/* ---------- tapping a panel ---------- */
+const ray = new THREE.Raycaster();
+function handleHit(hits) {
+  if (!hits.length) return;
+  const i = hits[0].object.userData.index;
+  if (i !== current || animating()) focus(i);
+  else if (PANELS[i].links) openSheet(i);
+}
+const animating = () => Math.abs(targetYaw - rig.rotation.y) > 0.02;
+
+/* ---------- modes ---------- */
+let mode = 'start';
+function setMode(m) {
+  mode = m;
+  document.body.className = document.body.className.replace(/\bmode-\S+/g, '').trim() + ' mode-' + m;
+  floor.visible = (m === '3d');
+}
+
+// 1) Full WebXR AR (Android Chrome & other WebXR browsers): panels anchored in the real room.
+async function startXR() {
+  const session = await navigator.xr.requestSession('immersive-ar', {
+    optionalFeatures: ['dom-overlay'], domOverlay: { root: $('hud') },
+  });
+  renderer.xr.setReferenceSpaceType('local');
+  await renderer.xr.setSession(session);
+  setMode('xr'); xrFrames = 0;
+  session.addEventListener('end', () => { if (mode === 'xr') { setMode('start'); resetCamera(); } });
+  toast('Tap a panel to bring it to you · tap again for links');
+}
+let xrFrames = 0;
+const controller = renderer.xr.getController(0);
+scene.add(controller);
+const tmpM = new THREE.Matrix4();
+controller.addEventListener('select', () => {
+  tmpM.identity().extractRotation(controller.matrixWorld);
+  ray.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+  ray.ray.direction.set(0, 0, -1).applyMatrix4(tmpM);
+  handleHit(ray.intersectObjects(meshes));
+});
+
+// 2) Camera + gyroscope (iPhone Safari, and phones without WebXR): panels float around you.
+let stream = null, orient = null, gyroCentered = false, gyroOn = false;
+async function startCamera() {
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try { await DeviceOrientationEvent.requestPermission(); } catch (e) { /* user declined: drag fallback */ }
+  }
+  stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+  $('cam').srcObject = stream; await $('cam').play().catch(() => {});
+  orient = null; gyroCentered = false; gyroOn = false;
+  addEventListener('deviceorientation', onOrient);
+  camera.fov = 64; camera.updateProjectionMatrix();
+  resetCamera(); setMode('camera'); focus(0, true);
+  setTimeout(() => {
+    if (mode === 'camera' && !gyroOn) toast('Motion sensors unavailable: drag to look around', 4500);
+    else if (mode === 'camera') toast('Turn around to explore · tap a panel for links');
+  }, 1500);
+}
+function onOrient(e) { if (e.alpha !== null) { orient = e; gyroOn = true; } }
+
+// 3) Plain 3D (desktop, or no camera): drag to look around.
+function start3D(msg) {
+  camera.fov = innerWidth < innerHeight ? 70 : 60; camera.updateProjectionMatrix();
+  resetCamera(); setMode('3d'); focus(0, true);
+  toast(msg || (isTouch ? 'Drag to look around · tap a panel' : 'Drag to look · ← → keys · click a panel'));
+}
+
+function resetCamera() { yaw = 0; pitch = 0; camera.position.set(0, 0, 0); camera.rotation.set(0, 0, 0); }
+function exitView() {
+  closeSheet();
+  if (renderer.xr.isPresenting) renderer.xr.getSession().end();
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; $('cam').srcObject = null; }
+  removeEventListener('deviceorientation', onOrient);
+  setMode('start'); resetCamera();
+}
+
+/* ---------- gyroscope → camera rotation ---------- */
+const zee = new THREE.Vector3(0, 0, 1), eul = new THREE.Euler(), q0 = new THREE.Quaternion();
+const q1 = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5)), qTarget = new THREE.Quaternion();
+const D2R = THREE.MathUtils.DEG2RAD;
+function orientationToQuat(q, e) {
+  const screenAngle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+  eul.set(e.beta * D2R, e.alpha * D2R, -e.gamma * D2R, 'YXZ');
+  q.setFromEuler(eul); q.multiply(q1); q.multiply(q0.setFromAxisAngle(zee, -screenAngle * D2R));
+}
+
+/* ---------- pointer: drag to look, tap to select, swipe in gyro mode ---------- */
+let yaw = 0, pitch = 0, down = null;
+const canvas = $('gl');
+canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, t: performance.now() }; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove', e => {
+  if (!down || mode === 'xr') return;
+  const dx = e.clientX - down.lx, dy = e.clientY - down.ly; down.lx = e.clientX; down.ly = e.clientY;
+  if (mode === '3d' || (mode === 'camera' && !gyroOn)) {
+    yaw += dx * 0.005; pitch = THREE.MathUtils.clamp(pitch + dy * 0.004, -1.2, 1.2);
+  }
+});
+canvas.addEventListener('pointerup', e => {
+  if (!down || mode === 'xr') { down = null; return; }
+  const dx = e.clientX - down.x, dy = e.clientY - down.y, dt = performance.now() - down.t;
+  if (Math.hypot(dx, dy) < 10 && dt < 500) {
+    ray.setFromCamera(new THREE.Vector2(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1), camera);
+    const hits = ray.intersectObjects(meshes);
+    if (hits.length) handleHit(hits); else closeSheet();
+  } else if (mode === 'camera' && gyroOn && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+    focus(current + (dx < 0 ? 1 : -1));   // swipe left = next
+  }
+  down = null;
+});
+
+/* ---------- render loop ---------- */
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.1);
+  if (mode === 'xr' && ++xrFrames === 4) focus(current, true);     // place ring once the pose is known
+  if (mode === 'camera' && gyroOn && orient) {
+    orientationToQuat(qTarget, orient);
+    camera.quaternion.slerp(qTarget, gyroCentered ? 0.35 : 1);
+    if (!gyroCentered) { gyroCentered = true; camera.updateMatrixWorld(); focus(current, true); }
+  } else if (mode === '3d' || mode === 'camera') {
+    camera.rotation.set(pitch, yaw, 0);
+  }
+  camera.updateMatrixWorld();
+
+  const k = 1 - Math.exp(-dt * 6);
+  rig.rotation.y += (targetYaw - rig.rotation.y) * k;
+  rig.position.lerp(targetPos, k);
+  if (mode !== 'start' && !animating()) {
+    const n = nearestToView();
+    if (n !== current) { current = n; updateHud(); }
+  }
+  for (const m of meshes) {
+    const on = m.userData.index === current;
+    const s = THREE.MathUtils.lerp(m.scale.x, on ? 1 : 0.92, k);
+    m.scale.setScalar(s);
+    m.material.opacity = THREE.MathUtils.lerp(m.material.opacity, on ? 1 : 0.72, k);
+  }
+  renderer.render(scene, camera);
+});
+
+addEventListener('resize', () => {
+  if (renderer.xr.isPresenting) return;
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+/* ---------- start screen: pick the best mode for this device ---------- */
+async function init() {
+  const loading = document.createElement('div'); loading.id = 'loading'; loading.className = 'mono'; loading.textContent = 'Preparing CV…';
+  document.body.append(loading);
+  const built = buildPanels();
+
+  // QR code pointing at this page (desktop only)
+  if (location.protocol.startsWith('http') && window.QRCode) {
+    const opts = { text: location.href.split('#')[0], colorDark: '#171714', colorLight: '#fbf9f4', correctLevel: QRCode.CorrectLevel.M };
+    new QRCode($('qrBig'), { ...opts, width: 360, height: 360 });
+    new QRCode($('qrSmall'), { ...opts, width: 200, height: 200, colorLight: '#f2eee6' });
+    $('qrCard').hidden = false; document.body.classList.add('has-qr');
+  }
+
+  let xrOK = false;
+  try { xrOK = !!navigator.xr && await navigator.xr.isSessionSupported('immersive-ar'); } catch (e) {}
+  const camOK = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && isTouch;
+  await built;
+
+  const primary = $('primary'), secondary = $('secondary');
+  primary.disabled = false;
+  const run = (fn) => async () => {
+    primary.disabled = true;
+    try { await fn(); }
+    catch (err) {
+      console.warn(err);
+      if (fn === startXR && camOK) { try { await startCamera(); } catch (e) { start3D('Camera not available: drag to look around'); } }
+      else start3D('Camera not available: drag to look around');
+    }
+    finally { primary.disabled = false; }
+  };
+  if (xrOK) { primary.textContent = 'View in AR  →'; primary.onclick = run(startXR); }
+  else if (camOK) { primary.textContent = 'View in AR  →'; primary.onclick = run(startCamera); }
+  else { primary.textContent = 'Explore in 3D  →'; primary.onclick = () => start3D(); }
+  if (xrOK || camOK) { secondary.hidden = false; secondary.onclick = () => start3D(); }
+}
+init();
+</script>
+</body>
+</html>
